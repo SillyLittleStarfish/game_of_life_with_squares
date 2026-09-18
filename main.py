@@ -66,7 +66,12 @@ Select a speed:
 [2] normal speed?
 [3] A little bit faster.
 
-Then press N to continue.
+Use your mouse to CLICK on cells you
+would like to be dead or alive. (Yikes).
+
+Then press the ENTER to start the game.
+
+Press N to continue. 
 """)
 
 #we begin with a cool intro page.
