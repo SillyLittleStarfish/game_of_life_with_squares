@@ -1,310 +1,146 @@
-import curses
+import pygame, sys
 import time
+from simulation import Simulation
+from typewriter import Typewriter
 
-def colour_in_square(display, row, column):
-    if display[row][column] == dead:
-        display[row][column] = alive
-    else:
-        display[row][column] = dead
-
-
-def image_on_screen(stdscr, total_columns, total_rows):
-    stdscr.clear()
-    stdscr.refresh()
-    maxy, maxx = stdscr.getmaxyx()
-    game_window_y = (maxy - total_rows) // 2
-    game_window_x = (maxx - total_columns) // 2
-    game_window = curses.newwin(total_rows + 2, total_columns + 2, game_window_y - 1, game_window_x - 1)
-    game_window.border()
-    game_window.refresh()
-    return game_window_y, game_window_x, game_window
+pygame.init()
+#Define Window
+game_state = "welcome"
+black = (0,0,0)
+grey = (29,29,29)
+window_width = 750
+window_height = 750
+cell_size = 25
+FPS = 8
 
 
-def check_for_new_life(display, row, column):
-    if row >= 0 and column >= 0:
-        try:
-            if display[row][column] == alive:
-                count = 1
-            else:
-                count = 0
-        except:
-            count = 0
-    else:
-        count = 0
-    return count
+window = pygame.display.set_mode((window_width, window_height))
+pygame.display.set_caption("Game of Life")
+
+clock = pygame.time.Clock()
+simulation = Simulation(window_width, window_width, cell_size)
+
+introduction_pages = True
+game_of_life = False
+
+instructions = Typewriter( """ 
+WHAT IS THE GAME OF LIFE? 
+The Game of Life is a simulation invented by 
+mathematician John Conway in which very simple 
+rules cause complex patterns to emerge.
+Each cell in a square grid can either be alive 
+or dead. 
+Don't worry, they're not really.
+In order to survive to the next generation, an 
+alive cell must have 2 or 3 neighbouring alive 
+cells.
+Each alive cell with 1 or 0 neighbours will die
+from isolation (oh no!).
+Each dead cell adjacent to exactly 3 neighbours
+is a birth cell and will become alive in the 
+next generation. 
+All births and deaths occur simultaneously within
+each generation.
+    
+HOW TO PLAY:
+""")
 
 
-def simulate_game_of_life(display, temp_display):
-    for row in range(len(display)):
-        for column in range(len(display[row])):
-            temp_display[row][column] = display[row][column]
-    for row in range(len(display)):
-        for column in range(len(display[row])):
-            if display[row][column] == dead:
-                if scanning(display,row,column) == 3:
-                    temp_display[row][column] = alive
-            else:
-                if scanning(display,row,column) < 2 or scanning(display,row,column) > 3:
-                    temp_display[row][column] = dead
-    different = 0
-    for row in range(len(temp_display)):
-        for column in range(len(temp_display[row])):
-            if display[row][column] != temp_display[row][column]:
-                different += 1
-            display[row][column] = temp_display[row][column]
-    return display, different
+welcome = Typewriter("""
+Welcome to Conway's Game of Life
+Press i for instructions, any other key to start.
+""")
 
+before_you_start = Typewriter("""
+Select a speed: 
+[1] slow.
+[2] normal speed?
+[3] A little bit faster.
 
-def scanning(display, row, column):
-    count = 0
-    count += check_for_new_life(display, row - 1, column - 1)
-    count += check_for_new_life(display, row - 1, column)
-    count += check_for_new_life(display, row - 1, column + 1)
-    count += check_for_new_life(display, row, column - 1)
-    count += check_for_new_life(display, row, column + 1)
-    count += check_for_new_life(display, row + 1, column - 1)
-    count += check_for_new_life(display, row + 1, column)
-    count += check_for_new_life(display, row + 1, column + 1)
-    return count
-
-
-def start_pattern(stdscr, game_window, game_window_x, total_columns):
-    title = "THE GAME OF LIFE"
-    stdscr.move(((stdscr.getmaxyx()[0] - game_window.getmaxyx()[0]) // 4) - 1, (total_columns - len(title)) // 2 + game_window_x)
-    typing(title, stdscr)
-
-
-def final_action(stdscr) -> bool:
-    "checks if user wants to play again and returns stop flag"
-    typing("Press p to play again, otherwise press q to quit", stdscr)
-    while True:
-        action = stdscr.getkey()
-        if action == "q":
-            stdscr.clear()
-            stdscr.refresh()
-            farewell = "THE END"
-            stdscr.move(stdscr.getmaxyx()[0] // 2, (stdscr.getmaxyx()[1] - len(farewell)) // 2)
-            typing(farewell, stdscr)
-            stdscr.refresh()
-            time.sleep(5)
-            return True
-        elif action == "p":
-            stdscr.clear()
-            return False
-
-
-def play_game(stdscr, total_columns, total_rows):
-    display = [[dead for x in range(total_columns)] for y in range(total_rows)]
-    temp_display = [[dead for x in range(total_columns)] for y in range(total_rows)]
-    game_window_y, game_window_x, game_window = image_on_screen(stdscr, total_columns, total_rows)
-    start_pattern(stdscr, game_window, game_window_x, total_columns)
-    game_window.move(1,1)
-    game_window.nodelay(False)
-    direction = game_window.getkey()
-    while direction != " ":
-        try:
-            curses.curs_set(1)
-            if direction == "w" and game_window.getyx()[0] > 1:
-                game_window.move(game_window.getyx()[0] - 1, game_window.getyx()[1])
-                curses.flushinp()
-                game_window.refresh()
-            elif direction == "s" and game_window.getyx()[0] < total_rows:
-                game_window.move(game_window.getyx()[0] + 1, game_window.getyx()[1])
-                curses.flushinp()
-                game_window.refresh()
-            elif direction == "a" and game_window.getyx()[1] > 1:
-                game_window.move(game_window.getyx()[0], game_window.getyx()[1] - 1)
-                curses.flushinp()
-                game_window.refresh()
-            elif direction == "d" and game_window.getyx()[1] < total_columns:
-                game_window.move(game_window.getyx()[0], game_window.getyx()[1] + 1)
-                curses.flushinp()
-                game_window.refresh()
-            elif direction == ".":
-                curses.curs_set(0)
-                currenty, currentx = game_window.getyx()
-                colour_in_square(display, currenty - 1, currentx - 1)
-                game_window.addch(display[currenty - 1][currentx - 1])
-                game_window.move(currenty, currentx)
-                curses.flushinp()
-                game_window.refresh()
-            else:
-                game_window.refresh()
-                direction = game_window.getkey()
-                continue
-            game_window.refresh()
-            direction = game_window.getkey()
-        except:
-            direction = game_window.getkey()
-            continue
-    return play_game_impl(display, temp_display, stdscr, game_window_y, game_window_x, game_window, total_columns, total_rows)
-
-
-
-def update_board(display, game_window, total_columns, total_rows, stdscr, gen, game_window_y, game_window_x):
-    curses.curs_set(0)
-    for row in range(total_rows):
-        for column in range(total_columns):
-            game_window.move(row + 1, column + 1)
-            game_window.addch(display[row][column])
-            game_window.refresh()
-    stdscr.refresh()
-    gen += 1
-    stdscr.clrtoeol()
-    stdscr.refresh()
-    return gen
-
-
-def manual_mode(display, temp_display, stdscr, game_window, total_columns, total_rows, gen, game_window_y, game_window_x):
-    char = stdscr.getkey()
-    while char != " ":
-        if char == "q":
-            return
-        char = stdscr.getkey()
-    display, different = simulate_game_of_life(display, temp_display)
-    gen = update_board(display, game_window, total_columns, total_rows, stdscr, gen, game_window_y, game_window_x)
-    stdscr.addstr(game_window_y + total_rows + 1, game_window_x, f"Generation: {gen}")
-    while different != 0:
-        char = stdscr.getkey()
-        if char == "q":
-            break
-        while char != " ":
-            if char == "q":
-                different = 0
-                break
-            char = stdscr.getkey()
-        display, different = simulate_game_of_life(display, temp_display)
-        gen = update_board(display, game_window, total_columns, total_rows, stdscr, gen, game_window_y, game_window_x)
-        if different != 0:
-            stdscr.addstr(game_window_y + total_rows + 1, game_window_x, f"Generation: {gen}")
-
-
-def auto_mode(display, temp_display, stdscr, game_window, speed, total_columns, total_rows, gen, game_window_y, game_window_x):
-    stdscr.nodelay(True)
-    display, different = simulate_game_of_life(display, temp_display)
-    curses.napms(speed)
-    gen = update_board(display, game_window, total_columns, total_rows, stdscr, gen, game_window_y, game_window_x)
-    stdscr.addstr(game_window_y + total_rows + 1, game_window_x, f"Generation: {gen}")
-    while different != 0:
-        char = stdscr.getch()
-        if char == ord("q"):
-            break
-        elif char == -1:
-            display, different = simulate_game_of_life(display, temp_display)
-            curses.napms(speed)
-            gen = update_board(display, game_window, total_columns, total_rows, stdscr, gen, game_window_y, game_window_x)
-            if different != 0:
-                stdscr.addstr(game_window_y + total_rows + 1, game_window_x, f"Generation: {gen}")
-    stdscr.nodelay(False)
-
-
-def play_game_impl(display, temp_display, stdscr, game_window_y, game_window_x, game_window, total_columns, total_rows):
-    gen = 0
-    stdscr.addstr(game_window_y + total_rows + 1, game_window_x, f"Generation: {gen}")
-    stdscr.move(game_window_y - 3, game_window_x)
-    typing("Press 1 for manual mode, press 2 for slow mode, press 3 for normal mode, press 4 for fast mode...", stdscr)
-    stdscr.refresh()
-    stdscr.nodelay(False)
-    num = stdscr.getkey()
-    while True:
-        if num == "1":
-            stdscr.refresh()
-            stdscr.move(game_window_y - 3, game_window_x)
-            stdscr.clrtoeol()
-            stdscr.refresh()
-            stdscr.move(game_window_y - 3, game_window_x)
-            typing("Manual mode: press space to see the next iteration", stdscr)
-            manual_mode(display, temp_display, stdscr, game_window, total_columns, total_rows, gen, game_window_y, game_window_x)
-            break
-        elif num == "2":
-            stdscr.move(game_window_y - 3, game_window_x)
-            stdscr.clrtoeol()
-            stdscr.move(game_window_y - 3, game_window_x)
-            typing("Slow mode: leaves time for deep contemplation", stdscr)
-            auto_mode(display, temp_display, stdscr, game_window, 3000, total_columns, total_rows, gen, game_window_y, game_window_x)
-            break
-        elif num == "3":
-            stdscr.move(game_window_y - 3, game_window_x)
-            stdscr.clrtoeol()
-            stdscr.move(game_window_y - 3, game_window_x)
-            typing("Normal mode: exactly how things should be", stdscr)
-            auto_mode(display, temp_display, stdscr, game_window, 300, total_columns, total_rows, gen, game_window_y, game_window_x)
-            break
-        elif num == "4":
-            stdscr.move(game_window_y - 3, game_window_x)
-            stdscr.clrtoeol()
-            stdscr.move(game_window_y - 3, game_window_x)
-            typing("Fast mode: it just looks cool", stdscr)
-            auto_mode(display, temp_display, stdscr, game_window, 10, total_columns, total_rows, gen, game_window_y, game_window_x)
-            break
-        else:
-            num = stdscr.getkey()
-    stdscr.refresh()
-    stdscr.move(game_window_y - 3, game_window_x)
-    stdscr.clrtoeol()
-    stdscr.refresh()
-    stdscr.move(game_window_y - 3, game_window_x)
-    return final_action(stdscr)
-
-
-def typing(sentence, stdscr):
-    col = 0
-    curses.curs_set(0)
-    for char in range(len(sentence)):
-        stdscr.addstr(sentence[char])
-        stdscr.refresh()
-        col += 1
-        curses.napms(50) # change back to 100 later
-    curses.curs_set(1)
-
-
-def instructions(stdscr):
-    stdscr.addch("\n")
-    stdscr.addch("\n")
-    typing("WHAT IS THE GAME OF LIFE?\n", stdscr)
-    typing("The Game of Life is a simulation invented by mathematician John Conway in which very simple rules cause complex patterns to emerge.\n", stdscr)
-    typing("Each cell in a square grid can either be \"alive\" or \"dead\" (represented in this version by \"*\" and \" \" respectively).\n", stdscr)
-    typing("In order to survive to the next generation, an alive cell must have 2 or 3 neighbouring alive cells.\n", stdscr)
-    typing("Each alive cell with 4 or more neighbours will die from overpopulation.\n", stdscr)
-    typing("Each alive cell with 1 or 0 neighbours will die from isolation.\n", stdscr)
-    typing("Each dead cell adjacent to exactly 3 neighbours is a birth cell and will become alive in the next generation.\n", stdscr)
-    typing("All births and deaths occur simultaneously within each generation.\n", stdscr)
-    stdscr.addch("\n")
-    stdscr.addch("\n")
-    typing("HOW TO PLAY:\n", stdscr)
-    typing("Use \"w\", \"a\", \"s\", and \"d\" keys to move the cursor around the box.\n", stdscr)
-    typing("Use \".\" to select the cell beneath the cursor.\n", stdscr)
-    typing("When satisfied with the starting pattern press space to begin the simulation.\n", stdscr)
-    typing("TIP: if unsure what makes a good start pattern, just select lots of cells randomly but close to each other and see what happens.\n", stdscr)
-    typing("Once the simulation is running you can press \"q\" at any point to quit.\n", stdscr)
-    typing("Press any key to start...", stdscr)
-    stdscr.refresh()
-    stdscr.nodelay(False)
-    stdscr.getch()
+Then press N to continue.
+""")
 
 
 
 
+while introduction_pages == True: 
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if game_state == "welcome":
+                if event.key == pygame.K_i: 
+                    game_state= "introduction"
+                else:
+                    game_state = "simulation"
+            elif game_state == "introduction": 
+                game_state = "simulation"
+            elif game_state == "simulation": 
+                if event.key == pygame.K_1: 
+                    FPS = 2
+                elif event.key == pygame.K_2: 
+                    FPS = 8
+                elif event.key == pygame.K_3:
+                    FPS = 12
 
-def main():
-    curses.wrapper(curses_main)
+                if event.key == pygame.K_n:
+                    introduction_pages = False
+                    game_of_life = True
+    window.fill(black)            
+    
+    if game_state == "welcome": 
+        welcome.update()
+        welcome.draw(window,(50,50))
+    elif game_state =="introduction": 
+        instructions.update()
+        instructions.draw(window,(50,50))
+    elif game_state == "simulation":
+        before_you_start.update()
+        before_you_start.draw(window,(50,50))
+    
+    pygame.display.flip()
+    clock.tick(60)
 
 
-def curses_main(stdscr):
-    while True:
-        typing("Welcome to the game of life", stdscr)
-        stdscr.addch("\n")
-        typing("Press i for instructions, any other key to start...", stdscr)
-        choice = stdscr.getkey()
-        if choice == "i":
-            instructions(stdscr)
-        total_columns = stdscr.getmaxyx()[1] * 2 // 3
-        total_rows = stdscr.getmaxyx()[0] * 2 // 3
-        if play_game(stdscr, total_columns, total_rows):
-            break
+
+#System Running
+
+while game_of_life == True: 
+#introduction page 
+  # check events 
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit() 
+            sys.exit()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pos = pygame.mouse.get_pos()
+            row = pos[1] // cell_size
+            column = pos[0] // cell_size
+            simulation.edit_cells(row, column)
+
+       
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                simulation.start()
+                pygame.display.set_caption("Game of Life is running")
+                     
+    #update 
+    simulation.update()
+
+    #draw
+    window.fill(grey)
+    simulation.draw(window)
+        
+
+    pygame.display.update()
+    clock.tick(FPS)  
 
 
-if __name__ == "__main__":
-    alive = "*"
-    dead = " "
-    main()
+    
+
+    
+
+
+
+    
+
+    
+    
