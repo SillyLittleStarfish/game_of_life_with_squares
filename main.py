@@ -1,3 +1,4 @@
+#define my libaries and take from files
 import pygame, sys
 import time
 from simulation import Simulation
@@ -20,9 +21,12 @@ pygame.display.set_caption("Game of Life")
 clock = pygame.time.Clock()
 simulation = Simulation(window_width, window_width, cell_size)
 
+#first start with introduction - all the instructions and stuff
+#when chosen speed, the actual game begins
 introduction_pages = True
 game_of_life = False
 
+#since the window screen was 750x750, text runs off. Too lazy to fix boundaries, might try another time, but storing like this was a quick fix.
 instructions = Typewriter( """ 
 WHAT IS THE GAME OF LIFE? 
 The Game of Life is a simulation invented by 
@@ -43,6 +47,10 @@ All births and deaths occur simultaneously within
 each generation.
     
 HOW TO PLAY:
+Click on the squares to create your starting 
+colony if cells. Generation 0. 
+
+Watch as madness unfolds.
 """)
 
 
@@ -51,6 +59,7 @@ Welcome to Conway's Game of Life
 Press i for instructions, any other key to start.
 """)
 
+#the speeds chosen also affect the speed of a cell clicked due to fps change - updates are slow on speed [1].
 before_you_start = Typewriter("""
 Select a speed: 
 [1] slow.
@@ -60,9 +69,7 @@ Select a speed:
 Then press N to continue.
 """)
 
-
-
-
+#we begin with a cool intro page.
 while introduction_pages == True: 
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
@@ -125,11 +132,11 @@ while game_of_life == True:
     #update 
     simulation.update()
 
-    #draw
+    #draw the display
     window.fill(grey)
     simulation.draw(window)
         
-
+    #update that display
     pygame.display.update()
     clock.tick(FPS)  
 
