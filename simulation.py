@@ -3,6 +3,7 @@ from grid import Grid
 class Simulation: 
     def __init__(self,width, height, cell_size):
         self.grid = Grid(width, height, cell_size)
+        #temporary grid that completes all updates then translates to become the og grid
         self.temp_grid = Grid(width, height, cell_size)
         self.rows = height // cell_size
         self.columns = width // cell_size
